@@ -1,0 +1,996 @@
+<!-- templates/verify.html -->
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>P100 Gold Redemption</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: 'Trajan Pro Semibold', 'Baskerville', 'Baskerville', serif; 
+      background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+      padding: 60px 40px; 
+      min-height: 100vh;
+    }
+    .container {
+      /* widened for comfortable two-column layout on desktop */
+      max-width: 1000px; 
+      margin: 0 auto;
+      background: white;
+      padding: 48px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-radius: 6px;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+      border-bottom: 2px solid #d4af37;
+      padding-bottom: 20px;
+    }
+    h1 {
+      font-size: 28px;
+      color: #333;
+      font-weight: 400;
+      letter-spacing: 1px;
+    }
+    h1 .gold { color: #d4af37; }
+    h2 { font-size: 22px; color: #666; font-weight: 400; margin-top: 5px;margin-bottom: 5px; }
+    h3 { font-size: 18px; color: #333; margin-bottom: 0px; font-weight: 400; }
+    
+    form { margin-bottom: 30px; }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label { 
+      display: block; 
+      margin-bottom: 8px; 
+      color: #333; 
+      font-size: 14px;
+      font-weight: 500;
+    }
+    input[type="text"],
+    input[type="password"],
+    input[type="number"] { 
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    input:focus {
+      outline: none;
+      border-color: #d4af37;
+      box-shadow: inset 0 0 3px rgba(212, 175, 55, 0.1);
+    }
+    
+    button {
+      background: #333;
+      color: white;
+      padding: 12px 24px;
+      border: 1px solid #333;
+      border-radius: 3px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+      margin-right: 10px;
+    }
+    button:hover {
+      background: #d4af37;
+      border-color: #d4af37;
+      color: #333;
+    }
+    button:disabled {
+      background: #ccc;
+      border-color: #ccc;
+      color: #999;
+      cursor: not-allowed;
+    }
+    
+    .result { 
+      margin: 20px 0;
+      padding: 16px;
+      border-radius: 3px;
+      background: #f9f9f9;
+      border-left: 4px solid #d4af37;
+    }
+    .result.hidden { display: none; }
+    .result.error { border-left-color: #b00020; background: #ffebee; }
+    .result.success { border-left-color: #2e7d32; background: #e8f5e9; }
+    
+    .hidden { display: none; }
+    .row { display: flex; gap: 12px; }
+    .col { flex: 1; }
+
+  /* Post-verification two-column layout */
+  .account-grid { display: flex; gap: 20px; align-items: flex-start; }
+  /* slightly adjusted proportions to give more space to positions */
+  .left-col { flex: 0 0 36%; }
+  .right-col { flex: 1 1 64%; }
+  .equity-big { font-size: 36px; font-weight: 700; color: #333; margin-top: 0px; }
+  .metric-big { font-size: 32px; font-weight: 700; color: #333; margin-top:0px; margin-bottom:6px; }
+  .positions-scroll { max-height: 420px; overflow: auto; border: 1px solid #f0e6cc; padding: 10px; border-radius: 4px; background:#fff; }
+  #changeAccountBtn { margin-top: 12px; background: transparent; border: 1px solid #d4af37; color: #333; padding: 8px 12px; border-radius:3px; }
+  /* Responsive: stack columns on narrow viewports */
+  @media (max-width: 900px) {
+    body { padding: 30px 16px; }
+    .container { max-width: 100%; padding: 20px; }
+    .account-grid { flex-direction: column; }
+    .left-col, .right-col { flex: 1 1 auto; }
+    .equity-big { font-size: 28px; }
+    .positions-scroll { max-height: 360px; }
+  }
+    
+    .section-title { 
+      color: #333;
+      font-size: 16px; 
+      margin: 10px 0 10px 0;
+      font-weight: 500;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 8px;
+    }
+    
+    .info-text { 
+      color: #666; 
+      font-size: 13px; 
+      line-height: 1.6;
+      margin: 12px 0;
+    }
+    
+    .timer { 
+      font-size: 24px; 
+      font-weight: bold; 
+      color: #d84315; 
+      margin-top: 12px;
+      text-align: center;
+      font-family: 'Courier New', monospace;
+    }
+    .timer.warning { color: #f57c00; }
+    .timer.normal { color: #2e7d32; }
+    
+    .calc-result { 
+      background: #f5f5f5;
+      padding: 12px;
+      border-radius: 3px;
+      margin: 12px 0;
+      font-size: 13px;
+      line-height: 1.8;
+    }
+    .per-gram { font-size: 15px; font-weight:600; margin-top:8px; color:#444; }
+    .center { display:flex; justify-content:center; align-items:center; }
+    
+    details {
+      margin: 15px 0;
+      font-size: 13px;
+    }
+    summary {
+      cursor: pointer;
+      color: #333;
+      font-weight: 500;
+      padding: 8px 0;
+      user-select: none;
+    }
+    summary:hover { color: #d4af37; }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 14px; /* slightly larger for readability */
+    }
+    table thead { background: #f9f9f9; }
+    table th {
+      text-align: left;
+      padding: 12px 8px; /* more breathing room */
+      border-bottom: 1px solid #ddd;
+      font-weight: 600;
+      color: #333;
+    }
+    table td {
+      padding: 10px 8px;
+      border-bottom: 1px solid #eee;
+    }
+    table tr:hover { background: #fafafa; }
+    
+    .error-text { color: #b00020; font-weight: 500; }
+    .success-text { color: #2e7d32; font-weight: 500; }
+    /* Modal styles for success popup */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 999999;
+      pointer-events: auto;
+    }
+    .modal {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px 24px;
+      width: 520px;
+      max-width: calc(100% - 40px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+      text-align: left;
+    }
+    .modal h2 { margin-bottom: 8px; font-size: 20px; }
+    .modal p { margin: 8px 0; color: #444; }
+    .modal .tx-details { background:#fafafa; padding:12px; border-radius:6px; margin:10px 0; font-family: monospace; }
+    .modal .actions { display:flex; gap:10px; justify-content:flex-end; margin-top:12px; }
+    .modal .actions .btn { padding: 8px 14px; border-radius:4px; border:1px solid #ccc; cursor:pointer; }
+    .modal .actions .btn.primary { background:#2e7d32; color:#fff; border-color:#2e7d32; }
+    .modal .contact { font-size:12px; color:#666; margin-top:8px; }
+    /* Consent modal uses same styling */
+    /* Pending modals for verification and redemption processing */
+    .pending-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999998;
+    }
+    .pending-modal {
+      background: #fff;
+      border-radius: 8px;
+      padding: 30px 40px;
+      text-align: center;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+      max-width: 400px;
+    }
+    .pending-modal h3 { margin-bottom: 16px; color: #333; }
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #d4af37;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>P100 <span class="gold">Gold</span> Redemption</h1>
+      <h2>Account Verification</h2>
+    </header>
+
+    <form id="verifyForm">
+      <div class="form-group">
+        <label for="mt5_login">Login</label>
+        <input type="text" id="mt5_login" name="mt5_login" required />
+      </div>
+      <div class="form-group">
+        <label for="mt5_master_password">Master Password</label>
+        <input type="password" id="mt5_master_password" name="mt5_master_password" required />
+      </div>
+      <button type="submit">Verify Account</button>
+    </form>
+
+    <div id="status" class="result" style="display:none;"></div>
+
+    <!-- Redemption UI (hidden until verification passes) -->
+    <div id="redeemSection" class="result hidden">
+      <h1><span class="gold">Gold</span> Redemption Details</h1>
+      <div id="redeemInfo" class="info-text">
+        <!-- dynamic content: equity, paxg price, max grams, etc. -->
+      </div>
+
+      <div class="section-title">Redemption Amount</div>
+      <div class="form-group">
+        <label for="redeem_grams">Enter grams to redeem</label>
+        <input type="number" id="redeem_grams" name="redeem_grams" min="50" step="50" placeholder="e.g. 50" />
+        <div class="info-text" style="margin-top: 6px;">Minimum 50 g, must be multiple of 50 g. <div id="perGramPrice" class="per-gram" aria-live="polite"></div></div>
+        <!-- Calculate button sits above the calculation result -->
+        <div style="margin-top:12px; margin-bottom:8px;">
+          <button id="calculateBtn" type="button">Calculate</button>
+        </div>
+        <div id="calcResult" class="calc-result" style="display:none;"></div>
+      </div>
+
+      <div class="row" style="margin-top: 20px;">
+        <div class="col center">
+          <!-- Confirm is hidden until Calculate is pressed -->
+          <button id="confirmBtn" type="button" style="display:none;" disabled>Confirm & Redeem</button>
+        </div>
+      </div>
+
+      <div id="redeemStatus" class="info-text" style="margin-top: 20px;"></div>
+    </div>
+  </div>
+
+  <!-- Success modal (hidden by default) -->
+  <div id="successBackdrop" class="modal-backdrop" role="dialog" aria-hidden="true">
+    <div class="modal" role="document" aria-labelledby="successTitle">
+      <h2 id="successTitle">Redemption Successful</h2>
+      <p id="successMessage">Your redemption was processed successfully.</p>
+      <div class="tx-details" id="successTxDetails">TX ID: n/a</div>
+      <p class="contact">If you need help, please contact support at <a href="mailto:support@p100gold.com">support@p100gold.com</a></p>
+      <div class="actions">
+        <button id="successClose" class="btn">Close</button>
+        <button id="successView" class="btn primary">View Transaction Details</button>
+      </div>
+    </div>
+
+      <!-- Consent modal (hidden by default) -->
+      <div id="consentBackdrop" class="modal-backdrop" role="dialog" aria-hidden="true">
+        <div class="modal" role="document" aria-labelledby="consentTitle">
+          <h2 id="consentTitle">Consent to Account Access</h2>
+          <p id="consentText">To verify and allow us to assist with your redemption process, you must provide access permission so P100 Gold can access and edit your MT5 account data to verify your equity and positions. This permission is required to proceed.</p>
+          <div class="modal-opts">
+            <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="consentCheckbox"/> I understand and consent to allow P100 Gold access and edit the account data for verification and redemption purposes.</label>
+          </div>
+          <p class="contact">If you have questions, contact support at <a href="mailto:support@p100gold.com">support@p100gold.com</a></p>
+          <div class="actions">
+            <button id="consentCancel" class="btn">Cancel</button>
+            <button id="consentConfirm" class="btn primary">Confirm & Proceed</button>
+          </div>
+        </div>
+      </div>
+  </div>
+
+  <!-- Pending verification modal -->
+  <div id="verifyPendingBackdrop" class="pending-backdrop" style="display: none;">
+    <div class="pending-modal">
+      <h3>Verifying Your Account</h3>
+      <p>Please wait while we verify your MT5 account credentials and fetch your account details.</p>
+      <div class="spinner"></div>
+    </div>
+  </div>
+
+  <!-- Pending redemption modal -->
+  <div id="redeemPendingBackdrop" class="pending-backdrop" style="display: none;">
+    <div class="pending-modal">
+      <h3>Processing Redemption</h3>
+      <p>Please wait while we process your gold redemption. This may take a moment.</p>
+      <div class="spinner"></div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const G_TO_OZ = 31.1035; // grams per troy ounce (approx)
+  const PREMIUM = 1.05;    // 5% premium applied to PAXG price (multiply)
+  const MIN_GR = 50;
+  const MULTIPLE = 50;
+
+  const formEl = document.getElementById('verifyForm');
+  const statusDiv = document.getElementById('status');
+  const redeemSection = document.getElementById('redeemSection');
+  const redeemInfo = document.getElementById('redeemInfo');
+  const redeemGramsInput = document.getElementById('redeem_grams');
+  const calcResult = document.getElementById('calcResult');
+  const calculateBtn = document.getElementById('calculateBtn');
+  const confirmBtn = document.getElementById('confirmBtn');
+  const redeemStatus = document.getElementById('redeemStatus');
+
+  // debug: verify that modal and form elements are present
+  try {
+    console.log('script load - formEl:', formEl);
+    console.log('script load - consentBackdrop:', document.getElementById('consentBackdrop'));
+  } catch (err) { console.error('debug log failed', err); }
+
+  // debug: verify button click
+  try {
+    const verifyBtnEl = document.querySelector('#verifyForm [type="submit"]');
+    if (verifyBtnEl) {
+      verifyBtnEl.addEventListener('click', (ev) => console.log('verify button clicked', ev))
+    }
+  } catch (e) { console.error('verify button debug attach failed', e); }
+
+  // store verification payload
+  let lastVerify = null;
+  // timer state
+  let timerInterval = null;
+  let timerRemaining = 180; // 3 minutes in seconds
+  const TIMER_DURATION = 180;
+
+  function showStatus(text, isError=false) {
+    statusDiv.style.display = 'block';
+    statusDiv.classList.remove('error', 'success');
+    statusDiv.classList.toggle('error', isError);
+    statusDiv.innerHTML = text;
+  }
+
+  function showVerifyPending() {
+    const backdrop = document.getElementById('verifyPendingBackdrop');
+    if (backdrop) {
+      backdrop.style.display = 'flex';
+    }
+  }
+
+  function hideVerifyPending() {
+    const backdrop = document.getElementById('verifyPendingBackdrop');
+    if (backdrop) {
+      backdrop.style.display = 'none';
+    }
+  }
+
+  function showRedeemPending() {
+    const backdrop = document.getElementById('redeemPendingBackdrop');
+    if (backdrop) {
+      backdrop.style.display = 'flex';
+    }
+  }
+
+  function hideRedeemPending() {
+    const backdrop = document.getElementById('redeemPendingBackdrop');
+    if (backdrop) {
+      backdrop.style.display = 'none';
+    }
+  }
+
+  function resetRedeemUI() {
+    redeemSection.classList.add('hidden');
+    redeemInfo.innerHTML = '';
+    redeemGramsInput.value = '';
+    calcResult.innerHTML = '';
+    calcResult.style.display = 'none';
+    confirmBtn.disabled = true;
+    // hide confirm button until calculate is pressed again
+    try { confirmBtn.style.display = 'none'; } catch (e) {}
+    redeemStatus.innerHTML = '';
+    stopTimer();
+  }
+
+  // Timer functions
+  function formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  }
+
+  function updateTimerDisplay() {
+    const timerEl = document.getElementById('timerDisplay');
+    if (!timerEl) return;
+    timerEl.textContent = formatTime(timerRemaining);
+    // Change color based on remaining time
+    if (timerRemaining <= 30) {
+      timerEl.className = 'timer warning';
+    } else {
+      timerEl.className = 'timer normal';
+    }
+  }
+
+  function startTimer() {
+    // clear any existing timer
+    if (timerInterval) clearInterval(timerInterval);
+    timerRemaining = TIMER_DURATION;
+    updateTimerDisplay();
+
+    timerInterval = setInterval(() => {
+      timerRemaining--;
+      updateTimerDisplay();
+
+      if (timerRemaining <= 0) {
+        stopTimer();
+        // timeout: reset the form and show message
+        showStatus('<strong>Session expired!</strong> Your verification has timed out. Please verify your account again.', true);
+        resetRedeemUI();
+        formEl.reset();
+      }
+    }, 1000);
+  }
+
+  function stopTimer() {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+  }
+
+  // show confirm-consent modal and perform verification only if consent is given
+  formEl.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    // show the consent modal and wait for user confirmation
+    console.log('verify: submit clicked, showing consent modal');
+    const consent = await showConsentModal();
+    if (!consent) {
+      // user denied consent; show message and abort
+      showStatus('<strong>Consent required to proceed</strong>. Verification aborted.', true);
+      return;
+    }
+    // consent given: proceed with verification
+    resetRedeemUI();
+    showVerifyPending();
+
+    // Use the form element rather than e.target (which may be the button)
+    const usedFormEl = (e.currentTarget || formEl);
+    console.log('verify: constructing FormData from', usedFormEl);
+    const form = new FormData(usedFormEl);
+    form.append('consent_given', 'true');
+    try {
+      console.log('verify: sending /api/verify POST', { login: form.get('mt5_login') });
+      const resp = await fetch('/api/verify', {
+        method: 'POST',
+        body: form
+      });
+      console.log('verify: /api/verify responded status', resp.status);
+      const data = await resp.json();
+      console.log('verify: /api/verify response json', data);
+
+      hideVerifyPending();
+
+      if (!resp.ok) {
+        showStatus(`<strong>Error:</strong> ${data.detail || JSON.stringify(data)}`, true);
+        return;
+      }
+      if (!data.verified) {
+        showStatus(`<strong>Not verified:</strong> ${data.reason || 'Unknown'}`, true);
+        return;
+      }
+
+      
+      //----------- compute max grams client can redeem -----------
+      // Server returns `redeemable_usdt` which is PAXG units (equity / paxg_price)
+      // Convert PAXG units -> grams: grams = paxg_units * grams_per_oz
+      const paxgUnits = Number(data.redeemable_usdt || 0);
+      const paxgPrice = Number(data.paxg_price || 0);
+      const equity = Number(data.equity || 0);
+
+      const maxGrams = paxgUnits * G_TO_OZ;
+
+      // Save for later confirm
+      lastVerify = {
+        mt5_login: form.get('mt5_login'),
+        mt5_master_password: form.get('mt5_master_password'),
+        equity,
+        paxgPrice,
+        paxgUnits,
+        maxGrams
+      };
+      // after lastVerify = {...}
+      // Show results + redemption UI
+      statusDiv.style.display = 'none';
+      redeemSection.classList.remove('hidden');
+      // hide the verify form now that account is verified
+      formEl.style.display = 'none';
+      redeemInfo.innerHTML = `
+        <div class="account-grid">
+          <div class="left-col">
+            <hr />
+            <h2>Account Summary - ${lastVerify.mt5_login}</h2>
+            <hr />
+            <br />
+            <div class="equity-big"><h3>Equity</h3>${equity.toLocaleString(undefined, {maximumFractionDigits:2})} USD</div>
+            <!-- Show PAXG price and max redeemable as large metrics on the next lines -->
+            <h3>Gold Price</h3>
+            <div class="metric-big">${paxgPrice.toLocaleString(undefined, {maximumFractionDigits:4})} USD/oz</div>
+            <h3>Total in Oz</h3>
+            <div class="metric-big"><strong id="positionsTotalOz">0.00</strong> oz</div>
+            <h3>Maximum Redeemable (grams) </h3>
+            <div class="metric-big">${maxGrams.toFixed(2)} g</div>
+            <p>1 oz = 31.1035 g (incl. 5% premium)</p>
+            <!--<button id="changeAccountBtn" type="button">Change Account</button>-->
+          </div>
+          <div class="right-col">
+            <h2>Time Remaining to Redeem</h2>
+            <div id="timerDisplay" class="timer normal">3:00</div>
+            <div class="section-title"><h2>Positions (<span id="positionsCount">0</span>)</h2></div>
+            <div id="positionsWrapper" class="positions-scroll" style="margin-top:8px"></div>
+          </div>
+        </div>
+      `;
+
+      // Render positions into the right-column scroll area
+      renderPositionsTable(data.positions);
+
+      // wire change-account button to collapse redeem UI and show the form again
+      const changeBtn = document.getElementById('changeAccountBtn');
+      if (changeBtn) {
+        changeBtn.addEventListener('click', () => {
+          stopTimer();
+          redeemSection.classList.add('hidden');
+          formEl.style.display = 'block';
+          formEl.reset();
+          lastVerify = null;
+          statusDiv.style.display = 'none';
+          try { confirmBtn.style.display = 'none'; } catch (e) {}
+        });
+      }
+
+      // Start the 3-minute timer
+      startTimer();
+
+  // prefill with 50 if possible
+  redeemGramsInput.value = (maxGrams >= MIN_GR) ? MIN_GR : '';
+  calcResult.innerHTML = '';
+  confirmBtn.disabled = true;
+  // hide confirm until calculate pressed
+  try { confirmBtn.style.display = 'none'; } catch (e) {}
+      // show per-gram cost (including premium) in redemption area
+      const perGramEl = document.getElementById('perGramPrice');
+      if (perGramEl) {
+        const perGram = (paxgPrice * PREMIUM) / G_TO_OZ;
+        perGramEl.textContent = `1 g = ${perGram.toFixed(2)} USD (incl. ${((PREMIUM-1)*100).toFixed(0)}% premium)`;
+      }
+
+    } catch (err) {
+      hideVerifyPending();
+      showStatus(`<strong>Network or server error:</strong> ${err.message}`, true);
+      console.error(err);
+      resetRedeemUI();
+    }
+  });
+
+    // RENDER POSITIONS TABLE + COLLECT SELECTED IDS
+  function renderPositionsTable(positions) {
+    const wrapper = document.getElementById('positionsWrapper');
+    const countSpan = document.getElementById('positionsCount');
+    wrapper.innerHTML = '';
+
+    if (!positions || positions.length === 0) {
+      wrapper.innerHTML = '<div class="muted">No open positions</div>';
+      countSpan.textContent = '0';
+      return;
+    }
+
+    countSpan.textContent = String(positions.length);
+
+    // compute total ounces from positions volumes
+    // contract convention: XAUUSD -> 1 lot = 100 oz, XAUUSD.s -> 1 lot = 10 oz
+    let totalOz = 0;
+    positions.forEach(p => {
+      const vol = Number(p.volume) || 0;
+      const sym = (p.symbol || '').toString();
+      const lotOz = (sym === 'XAUUSD.s') ? 10 : 100;
+      totalOz += vol;
+    });
+    const totalOzEl = document.getElementById('positionsTotalOz');
+    if (totalOzEl) totalOzEl.textContent = totalOz.toFixed(2);
+
+    // Create table
+    const table = document.createElement('table');
+    table.style.width = '100%';
+    table.style.borderCollapse = 'collapse';
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th style="border-bottom:1px solid #ddd;padding:6px;text-align:left">
+            <input type="checkbox" id="selectAllPositions" title="Select all" />
+          </th>
+          <th style="border-bottom:1px solid #ddd;padding:6px;text-align:center">Position ID</th>
+          <th style="border-bottom:1px solid #ddd;padding:6px;text-align:center">Symbol</th>
+          <th style="border-bottom:1px solid #ddd;padding:6px;text-align:center">Volume</th>
+          <th style="border-bottom:1px solid #ddd;padding:6px;text-align:center">Price</th>
+          <th style="border-bottom:1px solid #ddd;padding:6px;text-align:center">Open Time</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    `;
+
+    const tbody = table.querySelector('tbody');
+
+    positions.forEach((pos, idx) => {
+      // normalize field names: adjust these to whatever your server returns
+      const posId = pos.ID;
+      const symbol = pos.symbol;
+      const volume = pos.volume;
+      const price = pos.price;
+      const time = pos.time;
+      // format numbers for display
+      const priceDisplay = (price !== undefined && price !== null && price !== '') ? Number(price).toFixed(2) : '';
+      const volumeDisplay = (volume !== undefined && volume !== null && volume !== '') ? Number(volume).toFixed(2) : '';
+      // // profit may be returned under different keys; fall back to empty string
+      // const profit = (pos.profit !== undefined && pos.profit !== null) ? pos.profit : (pos.profit_usd !== undefined ? pos.profit_usd : (pos.profit_usdt !== undefined ? pos.profit_usdt : ''));
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="padding:6px;border-bottom:1px solid #eee">
+          <input type="checkbox" class="pos-checkbox" data-pos-id="${posId}" data-symbol="${symbol}" data-volume="${volume}" checked />
+        </td>
+        <td style="padding:6px;border-bottom:1px solid #eee;text-align:center">${posId}</td>
+        <td style="padding:6px;border-bottom:1px solid #eee;text-align:center">${symbol}</td>
+        <td style="padding:6px;border-bottom:1px solid #eee;text-align:center">${volumeDisplay}</td>
+        <td style="padding:6px;border-bottom:1px solid #eee;text-align:center">${priceDisplay}</td>
+        <td style="padding:6px;border-bottom:1px solid #eee;text-align:center">${time}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    wrapper.appendChild(table);
+
+    // default: check all position checkboxes and mark select-all as checked
+    document.querySelectorAll('.pos-checkbox').forEach(cb => cb.checked = true);
+    // wire up select-all
+    const selectAll = document.getElementById('selectAllPositions');
+    if (selectAll) {
+      selectAll.checked = true;
+      selectAll.addEventListener('change', () => {
+        const checked = selectAll.checked;
+        document.querySelectorAll('.pos-checkbox').forEach(cb => cb.checked = checked);
+      });
+    }
+  }
+
+  // Show consent modal; returns boolean whether consent was given
+  function showConsentModal() {
+    return new Promise((resolve) => {
+      const backdrop = document.getElementById('consentBackdrop');
+      if (!backdrop) {
+        // fallback to a native confirm so the user still consents when modal HTML is unavailable
+        const f = window.confirm("P100 Gold needs permission to access and edit your MT5 account data for verification and redemption. Do you consent?");
+        return resolve(!!f);
+      }
+      const confirmBtn = document.getElementById('consentConfirm');
+      const cancelBtn = document.getElementById('consentCancel');
+      const checkbox = document.getElementById('consentCheckbox');
+      if (!confirmBtn || !cancelBtn || !checkbox) {
+        console.error('consent modal missing elements', {confirmBtn, cancelBtn, checkbox});
+        const f = window.confirm("P100 Gold needs permission to access and edit your MT5 account data for verification and redemption. Do you consent?");
+        return resolve(!!f);
+      }
+      backdrop.style.display = 'flex';
+      // ensure it's on top and outside potential stacking contexts
+      try {
+        backdrop.style.zIndex = 999999;
+        if (backdrop.parentElement !== document.body) {
+          document.body.appendChild(backdrop);
+          console.log('showConsentModal: moved backdrop to body for top-level overlay');
+        }
+      } catch (e) { console.warn('showConsentModal: zIndex/append failed', e); }
+      backdrop.setAttribute('aria-hidden', 'false');
+      try { checkbox.focus(); } catch (e) {}
+      console.log('showConsentModal: modal displayed, waiting for user input');
+
+      function cleanup() {
+        backdrop.style.display = 'none';
+        backdrop.setAttribute('aria-hidden', 'true');
+        confirmBtn.removeEventListener('click', onConfirm);
+        cancelBtn.removeEventListener('click', onCancel);
+        document.removeEventListener('keydown', onKey);
+        checkbox.removeEventListener('change', onCheckboxChange);
+      }
+
+      function onConfirm(e) {
+        if (!checkbox.checked) {
+          // mark visually required
+          checkbox.focus();
+          return; // require user to check the box
+        }
+        console.log('showConsentModal: confirmed, cleanup and resolve true');
+        cleanup();
+        resolve(true);
+      }
+      // debug: report bounding boxes / computed styles
+      try {
+        const modalEl = backdrop.querySelector('.modal');
+        console.log('showConsentModal: backdrop computed style', window.getComputedStyle(backdrop));
+        if (modalEl) console.log('showConsentModal: modal bounding rect', modalEl.getBoundingClientRect(), window.getComputedStyle(modalEl));
+      } catch (e) { console.warn('showConsentModal: computed style logging failed', e); }
+      function onCancel(e) {
+        console.log('showConsentModal: cancelled by user');
+        cleanup();
+        resolve(false);
+      }
+      function onKey(ev) {
+        if (ev.key === 'Escape') {
+          onCancel();
+        }
+      }
+
+      // disable confirm until checkbox checked
+      confirmBtn.disabled = !checkbox.checked;
+      function onCheckboxChange() { confirmBtn.disabled = !checkbox.checked; }
+      checkbox.addEventListener('change', onCheckboxChange);
+      confirmBtn.addEventListener('click', onConfirm);
+      cancelBtn.addEventListener('click', onCancel);
+      document.addEventListener('keydown', onKey);
+    });
+  }
+
+  // returns array of selected positions [{id, symbol, volume}]
+  function collectSelectedPositionIds() {
+    const out = [];
+    document.querySelectorAll('.pos-checkbox:checked').forEach(cb => {
+      const id = cb.dataset.posId || cb.getAttribute('data-pos-id');
+      const symbol = cb.dataset.symbol || cb.getAttribute('data-symbol') || '';
+      const volumeRaw = cb.dataset.volume || cb.getAttribute('data-volume') || '';
+      // try to parse numeric volume when possible
+      const volume = volumeRaw === '' ? '' : (isNaN(Number(volumeRaw)) ? volumeRaw : Number(volumeRaw));
+      if (id) out.push({ id, symbol, volume });
+    });
+    return out;
+  }
+
+
+  function validateGrams(g) {
+    if (isNaN(g) || g <= 0) return 'Enter a valid number of grams';
+    if (g < MIN_GR) return `Minimum redeemable is ${MIN_GR} g`;
+    if (g % MULTIPLE !== 0) return `Grams must be a multiple of ${MULTIPLE} g`;
+    if (!lastVerify) return 'Please verify account first';
+    if (g > lastVerify.maxGrams + 0.0001) return `You only have ${lastVerify.maxGrams.toFixed(2)} g available to redeem`;
+    return null;
+  }
+
+  calculateBtn.addEventListener('click', () => {
+    calcResult.innerHTML = '';
+    calcResult.style.display = 'none';
+    redeemStatus.innerHTML = '';
+    confirmBtn.disabled = true;
+
+    const grams = Number(redeemGramsInput.value);
+    const err = validateGrams(grams);
+    if (err) {
+      calcResult.innerHTML = `<span class="error-text">${err}</span>`;
+      calcResult.style.display = 'block';
+      return;
+    }
+
+    // calculation: grams -> oz -> required equity in USD
+    const oz = grams / G_TO_OZ;
+    const paxgPrice = lastVerify.paxgPrice;
+    const requiredEquity = oz * paxgPrice * PREMIUM;
+
+    calcResult.innerHTML = `
+      <h1><strong>Redemption Calculation</strong></h1>
+      <h3>Grams: ${grams} g → ${oz.toFixed(4)} oz</h3>
+      <h3>XAUUSD price: ${paxgPrice.toFixed(4)} USD/oz</h3>
+      <h3>Premium: ${(PREMIUM * 100 - 100).toFixed(0)}%</h3>
+      <h2><strong>Estimated equity required to redeem ${grams} g:</strong> ${requiredEquity.toLocaleString(undefined, {maximumFractionDigits:2})} USD</h2>
+    `;
+    calcResult.style.display = 'block';
+
+  // Allow confirmation: reveal and enable confirm button
+  confirmBtn.style.display = 'inline-block';
+  confirmBtn.disabled = false;
+  });
+
+  confirmBtn.addEventListener('click', async () => {
+    const grams = Number(redeemGramsInput.value);
+    const err = validateGrams(grams);
+    if (err) {
+      redeemStatus.innerHTML = `<span class="error-text">${err}</span>`;
+      return;
+    }
+
+    // re-calc
+    const oz = grams / G_TO_OZ;
+    const paxgPrice = lastVerify.paxgPrice;
+    const requiredEquity = oz * paxgPrice * PREMIUM;
+
+    // Confirm with user
+    const confirmText =
+      `You are about to redeem ${grams} g (${oz.toFixed(4)} oz).\n` +
+      `This will deduct ${requiredEquity.toFixed(2)} USD from your equity (includes ${((PREMIUM-1)*100).toFixed(0)}% premium).\n\n` +
+      `Do you want to proceed?`;
+
+    if (!window.confirm(confirmText)) return;
+
+    // Send redemption request to server
+    showRedeemPending();
+    confirmBtn.disabled = true;
+    calculateBtn.disabled = true;
+
+    try {
+      const form = new FormData();
+      // collect selected positions (from checkboxes rendered earlier)
+      const selectedPositions = collectSelectedPositionIds();
+      if (selectedPositions.length === 0) {
+        // optional: require at least one position to be closed before redeeming
+        hideRedeemPending();
+        if (!confirm('No positions selected. Proceed with redemption without closing positions?')) {
+          confirmBtn.disabled = false;
+          calculateBtn.disabled = false;
+          return;
+        }
+        showRedeemPending();
+      }
+
+      // append position ids (array of ids) and full position details
+      const positionIdsOnly = selectedPositions.map(p => p.id);
+      form.append('position_ids', JSON.stringify(positionIdsOnly));
+      form.append('position_details', JSON.stringify(selectedPositions));
+      form.append('mt5_login', lastVerify.mt5_login);
+      form.append('mt5_master_password', lastVerify.mt5_master_password);
+      form.append('redeem_grams', String(grams));
+      // optionally include computed fields for server convenience
+      form.append('redeem_oz', String(oz));
+      form.append('required_equity', String(requiredEquity));
+      form.append('premium', String(PREMIUM));
+
+      const resp = await fetch('/api/redeem', {
+        method: 'POST',
+        body: form
+      });
+      const result = await resp.json();
+
+      if (!resp.ok) {
+        hideRedeemPending();
+        redeemStatus.innerHTML = `<span class="error-text">Redemption failed: ${result.detail || result.reason || JSON.stringify(result)}</span>`;
+        confirmBtn.disabled = false;
+        calculateBtn.disabled = false;
+        return;
+      }
+
+      // success: hide pending and show modal
+      hideRedeemPending();
+      try {
+        showSuccessModal(result);
+      } catch (e) {
+        // fallback text if modal fails
+        redeemStatus.innerHTML = `<span class="success-text"><strong>Success:</strong> ${result.message || 'Redemption completed'}. Transaction ID: ${result.tx_id || 'n/a'}</span>`;
+      }
+      // disable further actions in any case
+      confirmBtn.disabled = true;
+      calculateBtn.disabled = true;
+
+    } catch (err) {
+      hideRedeemPending();
+      redeemStatus.innerHTML = `<span class="error-text">Network or server error: ${err.message}</span>`;
+      console.error(err);
+      confirmBtn.disabled = false;
+      calculateBtn.disabled = false;
+    }
+  });
+
+  // Success modal helper
+  function showSuccessModal(result) {
+    const backdrop = document.getElementById('successBackdrop');
+    const msg = document.getElementById('successMessage');
+    const details = document.getElementById('successTxDetails');
+    const viewBtn = document.getElementById('successView');
+    const closeBtn = document.getElementById('successClose');
+
+    if (!backdrop || !msg || !details) return;
+
+    // Populate content
+    const tx = result.tx_id || result.txId || result.id || 'n/a';
+    const txt = result.message || 'Redemption completed successfully.';
+    msg.textContent = txt;
+    // show a small summary (include redeem_grams if present)
+    let summary = `TX ID: ${tx}`;
+    if (result.redeem_grams) summary += ` | Redeemed: ${result.redeem_grams} g`;
+    if (result.required_equity) summary += ` | Cost: ${Number(result.required_equity).toFixed(2)} USD`;
+    details.textContent = summary;
+
+    // show backdrop/modal
+    backdrop.style.display = 'flex';
+    backdrop.setAttribute('aria-hidden', 'false');
+
+    // Close handler
+    function closeModal() {
+      backdrop.style.display = 'none';
+      backdrop.setAttribute('aria-hidden', 'true');
+      viewBtn.removeEventListener('click', onView);
+      closeBtn.removeEventListener('click', closeModal);
+    }
+
+    // View handler: redirect to a page that can display TX summary
+    function onView() {
+      // redirect to /redeem/success with query params (server should handle or page may be static)
+      const params = new URLSearchParams();
+      if (tx) params.set('tx_id', tx);
+      if (result.redeem_grams) params.set('redeem_grams', result.redeem_grams);
+      // allow optional redirect param propagation
+      const url = `/redeem/success?${params.toString()}`;
+      window.location.href = url;
+    }
+
+    viewBtn.addEventListener('click', onView);
+    closeBtn.addEventListener('click', closeModal);
+
+    // Auto-redirect in 6 seconds to the details page (give user time to read)
+    const autoRedirect = setTimeout(() => {
+      onView();
+    }, 6000);
+
+    // If user closes before redirect, cancel timer
+    closeBtn.addEventListener('click', () => clearTimeout(autoRedirect));
+  }
+
+})();
+</script>
+</body>
+</html>

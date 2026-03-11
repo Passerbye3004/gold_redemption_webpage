@@ -1,0 +1,13 @@
+Flask==3.0.0
+Flask-CORS>=4.0.2
+requests==2.31.0
+python-dotenv==1.0.0
+gunicorn>=22.0.0
+schedule==1.2.2
+MT5Manager==5.0.5388
+fastapi
+uvicorn[standard]
+jinja2
+httpx
+firebase-admin==6.1.0
+pydantic==2.8.0

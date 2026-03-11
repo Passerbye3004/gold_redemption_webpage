@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: p100-gold-redemption
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn appv2:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PREMIUM_PERCENTAGE
+        value: "0.05"
+      - key: PAXG_SYMBOL
+        value: "PAXGUSDT"

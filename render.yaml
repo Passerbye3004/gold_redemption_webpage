@@ -2,6 +2,7 @@ services:
   - type: web
     name: p100-gold-redemption
     runtime: python
+    pythonVersion: "3.11.9"
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn appv2:app --host 0.0.0.0 --port $PORT
     envVars:

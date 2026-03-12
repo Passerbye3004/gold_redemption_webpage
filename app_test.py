@@ -104,7 +104,7 @@ async def get_paxg_price() -> float:
             return price
     except Exception:
         logger.exception("Failed to fetch PAXG price from Binance; using fallback")
-        return 4050.0
+        return 5150.50
 
 
 # ---------------------- Routes ----------------------
@@ -240,4 +240,5 @@ async def api_redeem(
 # ---------------------- Run ----------------------
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8000)))
